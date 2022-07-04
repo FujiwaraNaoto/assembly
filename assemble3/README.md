@@ -1,4 +1,4 @@
-# LOw Level Programming
+# Low Level Programming
 
 objectファイルを作るさいに利用する
 ```
@@ -152,4 +152,97 @@ section .text
 global _start
 _start:
     jmp _start
+```
+## strlen
+文字列の長さを検知するプログラムの例
+ヌル文字を検知することでカウントする.
+なお,場合によっては,この関数を呼び出す際に, rcx,rax,rdi
+をstackに退避しておくこと.
+```
+;文字列長さを数える
+strlen:
+    xor rcx,rcx;rcxレジスタを0クリア カウントに利用
+
+
+.loop:
+    
+    cmp byte [rdi+rcx],0;null文字との比較
+    je .end
+
+    inc rcx
+    jmp .loop
+
+
+.end:
+    mov rax,rcx;
+    ret ;return
+```
+
+## printf
+以上より, strlenと組み合わせることでprintfを作ることができる.
+```
+;第一引数rdiに文字列を受け取ったところからはじまる
+printf:
+
+    push rdi;
+    push rcx;    
+    push r11;r11とrcxはシステムコールで上書きされるため
+
+    mov rdi, message
+    call strlen
+    mov rdx,rax;返り値 文字数
+    mov rax,1;write
+    mov rsi,rdi;message
+    mov rdi,1;stdout
+    syscall
+    pop r11;
+    pop rcx;
+    pop rdi;
+    
+    ret;
+```
+
+
+## exit
+
+raxには60をいれ, 第一引数には rdiを入れる.
+rdiが0のときは
+```
+xor rdi,rdi
+```
+でも良い.
+以下は exit(0)のコード.
+```
+mov rax,60; exitシステムコール番号
+mov rdi,0; exit(0)にするため 
+syscall 
+```
+
+## file open
+raxレジスタには
+rdiにはファイルが入っているpath 同じディレクトリならばファイル名,
+rsiには書き込み権限　や　読み込み権限
+帰り値は ファイルディスクリプタがraxに書き込まれる
+ファイルに失敗したらraxには負の値が返る.
+
+```
+FILE_OPEN: 
+	mov	rax,	[SYS_OPEN]	; system call OPEN 00000002
+	mov	rdi,	FILENAME	; file path address
+	mov	rsi,	[O_RDWR]	; READ and WRITE 00000002
+	syscall
+
+	; Check File Open Result
+	mov	r10,	rax		; file discriptor to R10
+	cmp	rax,	0x00000000	; compare
+	jl	c_MSG_ERROR		; rax < 0 then error ;ファイルがうまく開けなかったときの処理
+```
+
+## file close
+    raxには 3,第二引数rdiにはfopenで用いたファイルディスクリプタ
+```
+FILE_CLOSE: 
+	mov	rax,	3		;sys_close
+	mov	rdi,	r10		; file discriptor
+	syscall
 ```
