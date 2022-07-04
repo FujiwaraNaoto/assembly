@@ -13,6 +13,18 @@ ld -o hello hello.o
 exit $?
 ```
 
+システムコールの番号を調べたい場合.　cat と　grep を組み合わせる.
+たとえば,execveシステムコール
+```
+cat usr/include/x86_64-linux_gnu/asm/unistd_64.h | grep execve
+```
+すると
+```
+#define __NR_execve 59
+#define __NR_execveat 322
+```
+ここから,execveを利用する際にはraxレジスタには59を入れるべきとわかる
+
 呼び出し先退避レジスタ　(プログラマーが逐一push popしなくていい)
 rbx,rbp,rsp,r12~r15
 
