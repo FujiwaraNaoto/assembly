@@ -214,6 +214,81 @@ printf:
     ret;
 ```
 
+## getchar 
+一文字標準入力.
+システムコールraxには0,
+rdi には stdoutで0,
+文字数は１なのでrdx=1,
+アセンブリでは配列の代わりにスタックを用い,rspでポインタを渡す.
+関数として使うために raxに値を返している.
+
+exit()を呼び出す際に,rdiに値を入れてしまう.
+こうすることでコマンド
+```
+echo $?
+```
+で入力した文字のASCIIが10進数で表示される.
+
+```
+   
+    readchar:
+        xor rax,rax; readシステムコールは0
+        push rax
+        xor rdi,rdi;stdinなので0
+        mov rsi,rsp
+        ;stackの先頭 スタックのアドレスをバッファの先頭アドレスとみなす(そういう仕様)
+        mov rdx,1;1文字
+        syscall
+        pop rax; stackの先頭　raxが返り値.
+        ret ;return
+
+
+    _start:
+        call readchar
+
+        ;exit()の際に入れてしまう
+        ;echo $?で確認可能
+        mov rdi,rax
+        mov rax,60
+        syscall
+```
+なお,read システムコールで失敗するとraxレジスタには負の数が入るため,
+以下のように実装することで,失敗時にHello worldを呼び出す. 
+```
+section .data
+    message: db "Hello World.",0x0a
+
+section .text
+    global _start
+
+_start:
+    xor rax,rax; readシステムコール 
+    push rax
+    xor rdi,rdi;mov rdi,0; stdinなので0
+    mov rsi,rsp; stackの先頭 スタックのアドレスを配列のバッファとみなす
+    mov rdx,1;1文字
+    syscall
+    ;cmp byte al,0
+    cmp rax,0x00000000; compare
+    jl .printHello ;if rax<0 
+    pop rax; return value
+    jmp .end
+        
+.printHello:
+    mov rax,1
+    mov rdi,1
+    mov rsi,message
+    mov rdx,13
+    syscall
+    call exit
+
+.end:
+    mov rdi,rax
+    mov rax,60;
+    syscall
+```
+
+
 
 ## exit
 
@@ -229,6 +304,11 @@ mov rax,60; exitシステムコール番号
 mov rdi,0; exit(0)にするため 
 syscall 
 ```
+コマンド
+```
+$echo $?
+```
+でrdiの値が標準出力される.
 
 ## file open
 raxレジスタには
@@ -251,7 +331,7 @@ FILE_OPEN:
 ```
 
 ## file close
-    raxには 3,第二引数rdiにはfopenで用いたファイルディスクリプタ
+raxには 3,第二引数rdiにはfopenで用いたファイルディスクリプタ
 ```
 FILE_CLOSE: 
 	mov	rax,	3		;sys_close
