@@ -1,4 +1,10 @@
 # Low Level Programming
+これはLinuxでnasmを用いてアセンブリを書く.
+Macについては扱わない. Macについて知りたい方は
+https://github.com/yassun-youtube/yubaba-assembly
+を参照.
+
+# コンパイル
 
 objectファイルを作るさいに利用する
 ```
